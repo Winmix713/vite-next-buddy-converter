@@ -4,6 +4,7 @@ import { saveAs } from "file-saver";
 import { type ConversionResult } from "@/types/converter";
 import { useEffect } from "react";
 import Prism from "prismjs";
+import { AlertTriangle, CheckCircle, AlertCircle, Clock } from "lucide-react";
 
 interface ConversionResultsProps {
   results: ConversionResult[];
@@ -20,6 +21,13 @@ const ConversionResults = ({ results, onDownloadAll }: ConversionResultsProps) =
     saveAs(blob, fileName);
   };
 
+  const getComplexityColor = (score?: number) => {
+    if (!score) return "text-gray-500";
+    if (score <= 3) return "text-green-500";
+    if (score <= 7) return "text-amber-500";
+    return "text-red-500";
+  };
+
   return (
     <div className="space-y-6 mt-8">
       <div className="flex items-center justify-between">
@@ -31,7 +39,15 @@ const ConversionResults = ({ results, onDownloadAll }: ConversionResultsProps) =
         {results.map((result, index) => (
           <div key={index} className="border rounded-lg overflow-hidden">
             <div className="bg-gray-100 px-4 py-3 flex items-center justify-between">
-              <h3 className="font-medium">{result.fileName}</h3>
+              <div className="flex items-center gap-2">
+                <h3 className="font-medium">{result.fileName}</h3>
+                {result.complexityScore && (
+                  <div className={`flex items-center gap-1 text-sm ${getComplexityColor(result.complexityScore)}`}>
+                    <Clock className="w-4 h-4" />
+                    <span>Komplexitás: {result.complexityScore}/10</span>
+                  </div>
+                )}
+              </div>
               <Button 
                 size="sm" 
                 variant="outline"
@@ -42,6 +58,23 @@ const ConversionResults = ({ results, onDownloadAll }: ConversionResultsProps) =
             </div>
             
             <div className="p-4 space-y-4">
+              {result.compatibilityIssues && result.compatibilityIssues.length > 0 && (
+                <div className="bg-amber-50 p-4 rounded border border-amber-200">
+                  <h4 className="font-medium mb-2 flex items-center gap-2 text-amber-700">
+                    <AlertTriangle className="w-4 h-4" />
+                    Potenciális konverziós problémák
+                  </h4>
+                  <ul className="text-sm space-y-1 text-amber-700">
+                    {result.compatibilityIssues.map((issue, issueIndex) => (
+                      <li key={issueIndex} className="flex items-start gap-2">
+                        <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                        <span>{issue}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              
               <div className="bg-gray-50 p-4 rounded border">
                 <h4 className="font-medium mb-2">Konverziós lépések</h4>
                 <ul className="text-sm space-y-1">

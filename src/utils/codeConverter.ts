@@ -1,3 +1,65 @@
+export const analyzeCode = (code: string, fileName: string): AnalysisResult => {
+  const issues: string[] = [];
+  let complexityScore = 1; // Start with the lowest score
+  
+  // Feature detection
+  const features = {
+    hasRouting: fileName.includes("pages/") || fileName.includes("app/"),
+    hasApiRoutes: fileName.includes("api/"),
+    hasGetStaticProps: code.includes("getStaticProps"),
+    hasGetServerSideProps: code.includes("getServerSideProps"),
+    hasNextImage: code.includes("next/image"),
+    hasNextLink: code.includes("next/link"),
+    hasMiddleware: code.includes("middleware") || fileName.includes("middleware"),
+    hasI18n: code.includes("next-i18next") || code.includes("next/router") && code.includes("locale"),
+  };
+  
+  // Increase complexity based on detected features
+  if (features.hasApiRoutes) {
+    complexityScore += 2;
+    issues.push("API routes need to be reimplemented as a separate backend service");
+  }
+  
+  if (features.hasGetStaticProps || features.hasGetServerSideProps) {
+    complexityScore += 2;
+    issues.push("Data fetching methods need to be converted to React hooks");
+  }
+  
+  if (features.hasMiddleware) {
+    complexityScore += 3;
+    issues.push("Middleware functionality requires custom implementation in Vite");
+  }
+  
+  if (features.hasI18n) {
+    complexityScore += 2;
+    issues.push("Internationalization needs to be reimplemented with i18next or similar");
+  }
+  
+  // Check for advanced Next.js features
+  if (code.includes("next/dynamic")) {
+    complexityScore += 1;
+    issues.push("Dynamic imports need to be converted to React.lazy");
+  }
+  
+  if (code.includes("next/head")) {
+    complexityScore += 1;
+    issues.push("Head management needs to be replaced with React Helmet or similar");
+  }
+  
+  if (code.includes("getInitialProps")) {
+    complexityScore += 2;
+    issues.push("Legacy getInitialProps needs to be converted to React hooks");
+  }
+  
+  // Cap complexity at 10
+  complexityScore = Math.min(complexityScore, 10);
+  
+  return {
+    complexityScore,
+    compatibilityIssues: issues,
+    features,
+  };
+};
 
 export const convertCode = async (code: string, fileName: string) => {
   // Simulate conversion delay
@@ -6,7 +68,17 @@ export const convertCode = async (code: string, fileName: string) => {
   const logs: string[] = [];
   let convertedCode = code;
   
+  // Run analysis first
+  const analysis = analyzeCode(code, fileName);
   logs.push(`Analyzing ${fileName}...`);
+  logs.push(`Complexity score: ${analysis.complexityScore}/10`);
+  
+  if (analysis.compatibilityIssues.length > 0) {
+    logs.push("⚠️ Potential conversion issues detected:");
+    analysis.compatibilityIssues.forEach(issue => {
+      logs.push(`⚠️ ${issue}`);
+    });
+  }
   
   // Package.json conversion
   if (fileName === "package.json") {
@@ -186,9 +258,40 @@ module.exports = router;
     logs.push("⚠️ Created API route implementation guide");
   }
   
+  // Detect middleware files
+  if (fileName.includes("middleware") || code.includes("export const config = {")) {
+    logs.push("⚠️ Detected Next.js middleware");
+    logs.push("ℹ️ Middleware needs to be implemented separately in a Vite project");
+    
+    convertedCode = `// This Next.js middleware needs custom implementation
+// Original file: ${fileName}
+
+/*
+ * For Vite projects, middleware functionality needs alternative implementation:
+ * 1. For API functionality: Use a backend service (Express, etc.)
+ * 2. For route protection: Implement in React Router or component logic
+ * 3. For request/response manipulation: Handle in your backend service
+ */
+
+// Example Express middleware implementation:
+/*
+const express = require('express');
+const app = express();
+
+app.use((req, res, next) => {
+  // Your middleware logic here
+  // converted from the Next.js middleware
+  next();
+});
+*/
+`;
+  }
+
   return {
     convertedCode,
     fileName: fileName.replace(/^pages\//, "components/").replace(/_app\.tsx$/, "App.tsx"),
     logs,
+    complexityScore: analysis.complexityScore,
+    compatibilityIssues: analysis.compatibilityIssues
   };
 };
