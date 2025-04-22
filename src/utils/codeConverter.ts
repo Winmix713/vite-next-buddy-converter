@@ -1,3 +1,5 @@
+import { ConversionResult, AnalysisResult } from "@/types/converter";
+
 export const analyzeCode = (code: string, fileName: string): AnalysisResult => {
   const issues: string[] = [];
   let complexityScore = 1; // Start with the lowest score
@@ -61,7 +63,7 @@ export const analyzeCode = (code: string, fileName: string): AnalysisResult => {
   };
 };
 
-export const convertCode = async (code: string, fileName: string) => {
+export const convertCode = async (code: string, fileName: string): Promise<ConversionResult> => {
   // Simulate conversion delay
   await new Promise(resolve => setTimeout(resolve, 1000));
   
