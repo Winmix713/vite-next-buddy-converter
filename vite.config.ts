@@ -19,4 +19,7 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  optimizeDeps: {
+    include: ['prismjs', 'prismjs/themes/prism-tomorrow.css'],
+  },
 }));
