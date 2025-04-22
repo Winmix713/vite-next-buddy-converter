@@ -6,9 +6,6 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 
-// Import Prism.js CSS for syntax highlighting
-import "prismjs/themes/prism-tomorrow.css";
-
 const queryClient = new QueryClient();
 
 const App = () => (
