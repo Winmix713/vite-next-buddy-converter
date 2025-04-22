@@ -1,12 +1,9 @@
-
 import { useState, useEffect } from "react";
-import { useDropzone } from "react-dropzone";
-import Prism from "prismjs";
 import { saveAs } from "file-saver";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
+import FileUploadSection from "./FileUploadSection";
+import CodePasteSection from "./CodePasteSection";
 import ConversionSteps from "./ConversionSteps";
 import "prismjs/themes/prism.css";
 import "prismjs/components/prism-javascript";
@@ -14,6 +11,7 @@ import "prismjs/components/prism-jsx";
 import "prismjs/components/prism-typescript";
 import "prismjs/components/prism-tsx";
 import "prismjs/components/prism-json";
+import Prism from "prismjs";
 
 interface ConversionResult {
   convertedCode: string;
@@ -22,64 +20,13 @@ interface ConversionResult {
 }
 
 const Converter = () => {
-  const [inputCode, setInputCode] = useState("");
-  const [inputFileName, setInputFileName] = useState("");
-  const [conversionResults, setConversionResults] = useState<ConversionResult[]>([]);
   const [activeTab, setActiveTab] = useState("upload");
+  const [conversionResults, setConversionResults] = useState<ConversionResult[]>([]);
   const [isConverting, setIsConverting] = useState(false);
 
-  const { getRootProps, getInputProps } = useDropzone({
-    onDrop: (acceptedFiles) => {
-      handleFileUpload(acceptedFiles);
-    },
-    multiple: true,
-    accept: {
-      "text/javascript": [".js", ".jsx", ".ts", ".tsx", ".json"],
-    },
-  });
-
-  // Highlight code when results change
   useEffect(() => {
     Prism.highlightAll();
   }, [conversionResults]);
-
-  const handleFileUpload = async (files: File[]) => {
-    const filePromises = files.map((file) => {
-      return new Promise<{ content: string; name: string }>((resolve) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          resolve({
-            content: e.target?.result as string,
-            name: file.name,
-          });
-        };
-        reader.readAsText(file);
-      });
-    });
-
-    const fileContents = await Promise.all(filePromises);
-    
-    // Process each file
-    const results: ConversionResult[] = [];
-    setIsConverting(true);
-    
-    for (const { content, name } of fileContents) {
-      const result = await convertCode(content, name);
-      results.push(result);
-    }
-    
-    setConversionResults(results);
-    setIsConverting(false);
-  };
-
-  const handlePasteCode = async () => {
-    if (!inputCode) return;
-    
-    setIsConverting(true);
-    const result = await convertCode(inputCode, inputFileName || "pasted-code.tsx");
-    setConversionResults([result]);
-    setIsConverting(false);
-  };
 
   const convertCode = async (code: string, fileName: string): Promise<ConversionResult> => {
     // Simulate conversion delay
@@ -291,6 +238,40 @@ module.exports = router;
     };
   };
 
+  const handleFileUpload = async (files: File[]) => {
+    const filePromises = files.map((file) => {
+      return new Promise<{ content: string; name: string }>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          resolve({
+            content: e.target?.result as string,
+            name: file.name,
+          });
+        };
+        reader.readAsText(file);
+      });
+    });
+
+    const fileContents = await Promise.all(filePromises);
+    setIsConverting(true);
+    const results: ConversionResult[] = [];
+
+    for (const { content, name } of fileContents) {
+      const result = await convertCode(content, name);
+      results.push(result);
+    }
+
+    setConversionResults(results);
+    setIsConverting(false);
+  };
+
+  const handleCodePaste = async (code: string, fileName: string) => {
+    setIsConverting(true);
+    const result = await convertCode(code, fileName);
+    setConversionResults([result]);
+    setIsConverting(false);
+  };
+
   const handleDownloadAll = () => {
     conversionResults.forEach((result) => {
       const blob = new Blob([result.convertedCode], { type: "text/plain;charset=utf-8" });
@@ -312,50 +293,17 @@ module.exports = router;
         </TabsList>
 
         <TabsContent value="upload" className="pt-4">
-          <Card className="p-6 border-2 border-dashed border-gray-300">
-            <div {...getRootProps({ className: "cursor-pointer text-center py-12" })}>
-              <input {...getInputProps()} />
-              <div className="text-3xl mb-2">📄</div>
-              <p className="text-lg font-medium mb-2">Húzd ide a Next.js fájljaidat</p>
-              <p className="text-sm text-gray-500 mb-4">vagy kattints a fájlok kiválasztásához</p>
-              <Button size="sm" variant="outline">Fájlok kiválasztása</Button>
-            </div>
-          </Card>
+          <FileUploadSection 
+            onFilesReceived={handleFileUpload}
+            isConverting={isConverting}
+          />
         </TabsContent>
 
-        <TabsContent value="paste" className="space-y-4 pt-4">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <div className="sm:col-span-2">
-              <Textarea 
-                placeholder="Illeszd be a Next.js kódot ide..." 
-                className="min-h-[300px] font-mono text-sm"
-                value={inputCode}
-                onChange={(e) => setInputCode(e.target.value)}
-              />
-            </div>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-2" htmlFor="fileName">
-                  Fájlnév
-                </label>
-                <input
-                  id="fileName"
-                  type="text"
-                  placeholder="my-component.tsx"
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  value={inputFileName}
-                  onChange={(e) => setInputFileName(e.target.value)}
-                />
-              </div>
-              <Button 
-                className="w-full" 
-                onClick={handlePasteCode}
-                disabled={!inputCode || isConverting}
-              >
-                {isConverting ? "Konvertálás..." : "Konvertálás"}
-              </Button>
-            </div>
-          </div>
+        <TabsContent value="paste" className="pt-4">
+          <CodePasteSection 
+            onCodeSubmit={handleCodePaste}
+            isConverting={isConverting}
+          />
         </TabsContent>
       </Tabs>
 
