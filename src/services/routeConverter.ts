@@ -1,13 +1,11 @@
-
 import { RouteObject } from "react-router-dom";
 import { RouteConversionResult } from "@/types/conversion";
-import { convertToReactRoutes as convertRoutes, NextJsRoute } from "./conversion/route/routeConverter";
+import { NextJsRoute, analyzeRoutes, convertToReactRoutes } from "./conversion/route";
 
-export type { NextJsRoute } from "./conversion/route/routeConverter";
+export type { NextJsRoute };
+export { analyzeRoutes, convertToReactRoutes };
 
-export function analyzeNextJsRoutes(
-  files: string[]
-): NextJsRoute[] {
+export function analyzeNextJsRoutes(files: string[]): NextJsRoute[] {
   const routes: NextJsRoute[] = [];
   
   files
@@ -23,9 +21,7 @@ export function analyzeNextJsRoutes(
   return routes;
 }
 
-export function convertNextJsRoutes(
-  files: string[]
-): RouteConversionResult {
+export function convertNextJsRoutes(files: string[]): RouteConversionResult {
   const result: RouteConversionResult = {
     nextRoutes: [],
     reactRouterRoutes: [],
@@ -49,7 +45,7 @@ export function convertNextJsRoutes(
 }
 
 // Re-export the convertToReactRoutes function from route/routeConverter
-export { convertRoutes as convertToReactRoutes };
+export { convertToReactRoutes as convertToReactRoutes };
 
 function createRouteFromFilePath(filePath: string): NextJsRoute | null {
   // Extract relevant path parts
