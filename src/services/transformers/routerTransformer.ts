@@ -19,14 +19,15 @@ export function transformRouterUsage(path: NodePath<t.MemberExpression>, result:
           break;
         case 'asPath':
         case 'pathname':
-          // Create a member expression instead of directly replacing
+          // Create a member expression
           const locationPathname = t.memberExpression(
             t.identifier('location'), 
             t.identifier('pathname')
           );
-          // Use path.replaceWith with the created expression
-          if (path.node) {
-            path.replaceWith(locationPathname);
+          
+          // Instead of using path.replaceWith directly, wrap the node manually
+          if (path.parentPath) {
+            path.parentPath.replaceWith(t.expressionStatement(locationPathname));
             result.changes.push('router path property transformed');
           }
           break;

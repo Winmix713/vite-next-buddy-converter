@@ -1,5 +1,6 @@
 
-import { analyzeNextJsRoutes, convertToReactRoutes, NextJsRoute } from "../routeConverter";
+import { analyzeNextJsRoutes, convertToReactRoutes } from "../routeConverter";
+import { NextJsRoute } from "../conversion/route/types";
 import { ErrorCollector } from "../errors/ErrorCollector";
 
 /**
@@ -23,8 +24,11 @@ export class RouteAnalyzer {
     complexRoutes: NextJsRoute[];
   }> {
     try {
+      // Convert File[] to string[] (using file paths)
+      const filePaths = this.files.map(file => file.name || file.toString());
+      
       // Analyze Next.js routes
-      const nextRoutes = analyzeNextJsRoutes(this.files);
+      const nextRoutes = analyzeNextJsRoutes(filePaths);
       
       // Convert to React Router routes
       const reactRoutes = convertToReactRoutes(nextRoutes);

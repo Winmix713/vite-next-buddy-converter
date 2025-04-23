@@ -1,7 +1,7 @@
 
 // Add missing conversion result type
 
-import { NextJsRoute } from "../services/routeConverter";
+import { NextJsRoute } from "../services/conversion/route/types";
 
 export interface ConversionOptions {
   syntax: 'typescript' | 'javascript';

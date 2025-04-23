@@ -1,7 +1,9 @@
 
 import { RouteObject } from "react-router-dom";
-import { NextJsRoute, RouteConversionResult } from "@/types/conversion";
-import { convertToReactRoutes as convertRoutes } from "./conversion/route/routeConverter";
+import { RouteConversionResult } from "@/types/conversion";
+import { convertToReactRoutes as convertRoutes, NextJsRoute } from "./conversion/route/routeConverter";
+
+export type { NextJsRoute } from "./conversion/route/routeConverter";
 
 export function analyzeNextJsRoutes(
   files: string[]

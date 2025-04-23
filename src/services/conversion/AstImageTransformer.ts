@@ -1,199 +1,174 @@
-import { parse } from '@babel/parser';
-import traverse from '@babel/traverse';
-import generate from '@babel/generator';
+import { NodePath } from '@babel/traverse';
 import * as t from '@babel/types';
-import { ErrorCollector } from '../errors/ErrorCollector';
-import { safeNodeCast, isNodeOfType } from '../astTransformerHelper';
+import { TransformResult } from '@/types/ast';
 
 /**
- * Transformer that uses AST to convert Next.js Image components
- * to @unpic/react Image components with advanced props handling
+ * Transforms Next.js Image components to unpic-img Image components
  */
 export class AstImageTransformer {
-  private errorCollector: ErrorCollector;
-  
-  constructor(errorCollector: ErrorCollector) {
-    this.errorCollector = errorCollector;
-  }
-  
   /**
-   * Transform Next.js Image to @unpic/react Image using AST
+   * Transform Next.js Image imports to unpic-img imports
    */
-  transformImageComponent(code: string, filePath: string): {
-    code: string;
-    imports: string[];
-    warnings: string[];
-  } {
-    const result = {
-      code,
-      imports: ["import { Image } from '@unpic/react';"],
-      warnings: [] as string[]
-    };
+  static transformImageImports(path: NodePath<t.ImportDeclaration>, result: TransformResult): void {
+    const source = path.node.source.value;
     
-    try {
-      // Parse code to AST
-      const ast = parse(code, {
-        sourceType: 'module',
-        plugins: ['jsx', 'typescript']
-      });
+    if (source === 'next/image') {
+      // Replace with unpic-img
+      path.node.source.value = '@unpic/react';
       
-      // Track if we found and modified any Image components
-      let imageComponentFound = false;
-      let nextImageImportFound = false;
-      
-      // Find and replace Next.js Image imports
-      traverse(ast, {
-        ImportDeclaration(path) {
-          const importSource = path.node.source.value;
-          
-          if (importSource === 'next/image') {
-            nextImageImportFound = true;
-            
-            // Replace the import with @unpic/react
-            path.node.source.value = '@unpic/react';
-            
-            // Check if it's a default import and adjust if needed
-            const defaultImport = path.node.specifiers.find(
-              spec => t.isImportDefaultSpecifier(safeNodeCast(spec))
-            );
-            
-            if (defaultImport) {
-              imageComponentFound = true;
-            }
-          }
-        }
-      });
-      
-      // Return early if no Next.js Image import was found
-      if (!nextImageImportFound) {
-        return result;
-      }
-      
-      // Transform JSX elements
-      traverse(ast, {
-        JSXElement(path) {
-          const openingElement = path.node.openingElement;
-          
-          // Check if this is an Image component
-          if (t.isJSXIdentifier(openingElement.name) && 
-              openingElement.name.name === 'Image') {
-            
-            imageComponentFound = true;
-            
-            // Convert Next.js Image props to @unpic/react Image props
-            this.transformNextImagePropsToUnpic(openingElement.attributes);
-          }
-        }
-      });
-      
-      // Generate code from the modified AST
-      if (imageComponentFound) {
-        const output = generate(ast);
-        result.code = output.code;
-        
-        // Add warnings about potentially unsupported features
-        if (code.includes('placeholder="blur"') || code.includes('blurDataURL')) {
-          result.warnings.push('Next.js Image blur placeholder requires additional setup with @unpic/react');
-          this.errorCollector.addError({
-            code: 'IMAGE_BLUR_UNSUPPORTED',
-            severity: 'warning',
-            message: 'Image blur placeholder requires additional setup with @unpic/react',
-            file: filePath,
-            suggestion: 'Consider using CSS blur filters or implement a custom blur solution'
-          });
-        }
-      }
-      
-      return result;
-    } catch (error) {
-      // Add error to collector
-      this.errorCollector.addError({
-        code: 'AST_IMAGE_TRANSFORM_ERROR',
-        severity: 'warning',
-        message: `Error transforming Image component: ${error instanceof Error ? error.message : String(error)}`,
-        file: filePath
-      });
-      
-      // Return original code if transformation fails
-      return result;
+      // Track the change
+      result.changes.push('Replaced next/image import with @unpic/react');
     }
   }
   
   /**
-   * Transform Next.js Image props to @unpic/react Image props
+   * Transform Next.js Image components to unpic-img Image components
    */
-  private transformNextImagePropsToUnpic(attributes: (t.JSXAttribute | t.JSXSpreadAttribute)[]): void {
-    // Track if required props are present
-    let hasSizes = false;
-    let hasWidth = false;
-    let hasHeight = false;
+  static transformImageComponents(path: NodePath<t.JSXElement>, result: TransformResult): void {
+    const openingElement = path.node.openingElement;
     
-    // Process all attributes
+    // Check if this is a Next.js Image component
+    if (t.isJSXIdentifier(openingElement.name) && 
+        (openingElement.name.name === 'Image' || openingElement.name.name === 'NextImage')) {
+      
+      // Transform the attributes
+      this.transformImageAttributes(openingElement.attributes, result);
+      
+      // Track the change
+      result.changes.push('Transformed Next.js Image component to unpic-img Image');
+    }
+  }
+  
+  /**
+   * Transform Next.js Image attributes to unpic-img attributes
+   */
+  private static transformImageAttributes(
+    attributes: Array<t.JSXAttribute | t.JSXSpreadAttribute>,
+    result: TransformResult
+  ): void {
+    // Map of Next.js Image props to unpic-img props
+    const propMapping: Record<string, string> = {
+      'src': 'src',
+      'alt': 'alt',
+      'width': 'width',
+      'height': 'height',
+      'priority': 'priority',
+      'quality': 'quality',
+      'placeholder': 'placeholder',
+      'blurDataURL': 'blurDataURL',
+      'layout': 'layout',
+      'objectFit': 'style', // Will need special handling
+      'objectPosition': 'style', // Will need special handling
+    };
+    
+    // Track which props we've seen
+    const seenProps = new Set<string>();
+    
+    // Transform each attribute
     for (let i = 0; i < attributes.length; i++) {
       const attr = attributes[i];
       
-      if (!t.isJSXAttribute(attr)) continue;
-      
-      const name = attr.name.name.toString();
-      
-      switch (name) {
-        case 'layout':
-          // Remove layout prop as it's not needed in @unpic/react
+      if (t.isJSXAttribute(attr) && t.isJSXIdentifier(attr.name)) {
+        const propName = attr.name.name as string;
+        seenProps.add(propName);
+        
+        // Handle special cases
+        if (propName === 'layout') {
+          // Remove layout prop as unpic-img doesn't use it
           attributes.splice(i, 1);
           i--;
-          break;
-        
-        case 'objectFit':
-          // Rename to style prop with objectFit
-          attr.name.name = 'style';
-          const value = attr.value;
           
-          if (t.isStringLiteral(value)) {
-            // Create object expression for style
-            attr.value = t.jsxExpressionContainer(
-              t.objectExpression([
-                t.objectProperty(
-                  t.identifier('objectFit'),
-                  t.stringLiteral(value.value)
-                )
-              ])
+          // Add appropriate style based on layout value
+          if (attr.value && t.isStringLiteral(attr.value) && attr.value.value === 'fill') {
+            // Add style for fill layout
+            const styleAttr = t.jsxAttribute(
+              t.jsxIdentifier('style'),
+              t.jsxExpressionContainer(
+                t.objectExpression([
+                  t.objectProperty(
+                    t.identifier('width'),
+                    t.stringLiteral('100%')
+                  ),
+                  t.objectProperty(
+                    t.identifier('height'),
+                    t.stringLiteral('100%')
+                  ),
+                  t.objectProperty(
+                    t.identifier('objectFit'),
+                    t.stringLiteral('cover')
+                  )
+                ])
+              )
             );
+            attributes.push(styleAttr);
           }
-          break;
-        
-        case 'priority':
-          // Convert priority to loading="eager"
-          attr.name.name = 'loading';
-          attr.value = t.stringLiteral('eager');
-          break;
-        
-        case 'placeholder':
-          // Handle placeholder - we'll keep it for now but add a warning
-          if (attr.value && t.isStringLiteral(attr.value) && attr.value.value === 'blur') {
-            // Keep as is, warning added elsewhere
+        } else if (propName === 'objectFit' || propName === 'objectPosition') {
+          // Remove these props as they'll be handled via style
+          attributes.splice(i, 1);
+          i--;
+          
+          // Find or create style attribute
+          let styleAttrIndex = attributes.findIndex(a => 
+            t.isJSXAttribute(a) && 
+            t.isJSXIdentifier(a.name) && 
+            a.name.name === 'style'
+          );
+          
+          if (styleAttrIndex === -1) {
+            // Create new style attribute
+            const styleAttr = t.jsxAttribute(
+              t.jsxIdentifier('style'),
+              t.jsxExpressionContainer(
+                t.objectExpression([
+                  t.objectProperty(
+                    t.identifier(propName),
+                    attr.value && t.isStringLiteral(attr.value) 
+                      ? t.stringLiteral(attr.value.value)
+                      : t.stringLiteral('cover') // Default value
+                  )
+                ])
+              )
+            );
+            attributes.push(styleAttr);
+          } else {
+            // Add to existing style attribute
+            const styleAttr = attributes[styleAttrIndex] as t.JSXAttribute;
+            if (styleAttr.value && t.isJSXExpressionContainer(styleAttr.value) && 
+                t.isObjectExpression(styleAttr.value.expression)) {
+              styleAttr.value.expression.properties.push(
+                t.objectProperty(
+                  t.identifier(propName),
+                  attr.value && t.isStringLiteral(attr.value) 
+                    ? t.stringLiteral(attr.value.value)
+                    : t.stringLiteral('cover') // Default value
+                )
+              );
+            }
           }
-          break;
-          
-        case 'sizes':
-          hasSizes = true;
-          break;
-          
-        case 'width':
-          hasWidth = true;
-          break;
-          
-        case 'height':
-          hasHeight = true;
-          break;
+        } else if (propName === 'loader' || propName === 'unoptimized') {
+          // Remove these props as unpic-img handles optimization differently
+          attributes.splice(i, 1);
+          i--;
+        } else if (propMapping[propName] && propMapping[propName] !== propName) {
+          // Rename the prop according to the mapping
+          attr.name = t.jsxIdentifier(propMapping[propName]);
+        }
       }
     }
     
-    // Add loading="lazy" if no priority/loading is specified
-    const hasLoading = attributes.some(attr => 
-      t.isJSXAttribute(attr) && attr.name.name.toString() === 'loading'
-    );
+    // Add required props if missing
+    if (!seenProps.has('layout') && !seenProps.has('fill')) {
+      // Add layout="constrained" as default
+      attributes.push(
+        t.jsxAttribute(
+          t.jsxIdentifier('layout'),
+          t.stringLiteral('constrained')
+        )
+      );
+    }
     
-    if (!hasLoading) {
+    // Add loading="lazy" if priority is not set
+    if (!seenProps.has('priority') && !seenProps.has('loading')) {
       attributes.push(
         t.jsxAttribute(
           t.jsxIdentifier('loading'),
@@ -201,16 +176,84 @@ export class AstImageTransformer {
         )
       );
     }
-    
-    // Add responsive handling if needed
-    if (!hasSizes && hasWidth && hasHeight) {
-      // Add sizes attribute for responsive images
-      attributes.push(
-        t.jsxAttribute(
-          t.jsxIdentifier('sizes'),
-          t.stringLiteral('(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw')
-        )
-      );
+  }
+  
+  /**
+   * Transform Next.js Image static methods
+   */
+  static transformImageStaticMethods(path: NodePath<t.MemberExpression>, result: TransformResult): void {
+    if (t.isIdentifier(path.node.object) && 
+        (path.node.object.name === 'Image' || path.node.object.name === 'NextImage') && 
+        t.isIdentifier(path.node.property)) {
+      
+      // Handle static methods like Image.loader
+      if (path.node.property.name === 'loader') {
+        // Replace with appropriate unpic-img equivalent or custom implementation
+        result.warnings.push('Image.loader is not directly supported in unpic-img. Consider using a custom loader function.');
+      }
     }
   }
 }
+
+/**
+ * Utility function to transform Next.js Image props to unpic-img props
+ */
+function transformNextImagePropsToUnpic(node: any) {
+  if (!node || !node.attributes) return node;
+  
+  // Clone the node to avoid mutating the original
+  const clonedNode = { ...node };
+  
+  // Transform attributes based on the mapping
+  if (Array.isArray(clonedNode.attributes)) {
+    const propMapping: Record<string, string> = {
+      'src': 'src',
+      'alt': 'alt',
+      'width': 'width',
+      'height': 'height',
+      'priority': 'priority',
+      'quality': 'quality',
+      'placeholder': 'placeholder',
+      'blurDataURL': 'blurDataURL',
+      'layout': 'layout',
+      'objectFit': 'style',
+      'objectPosition': 'style',
+    };
+    
+    // Process each attribute
+    clonedNode.attributes = clonedNode.attributes.map((attr: any) => {
+      if (attr.name && propMapping[attr.name.name]) {
+        // Special handling for style-related props
+        if (['objectFit', 'objectPosition'].includes(attr.name.name)) {
+          // Convert to style prop
+          return {
+            ...attr,
+            name: { ...attr.name, name: 'style' },
+            value: {
+              type: 'JSXExpressionContainer',
+              expression: {
+                type: 'ObjectExpression',
+                properties: [{
+                  type: 'ObjectProperty',
+                  key: { type: 'Identifier', name: attr.name.name },
+                  value: attr.value
+                }]
+              }
+            }
+          };
+        }
+        
+        // Rename the prop according to the mapping
+        return {
+          ...attr,
+          name: { ...attr.name, name: propMapping[attr.name.name] }
+        };
+      }
+      return attr;
+    });
+  }
+  
+  return clonedNode;
+}
+
+export { transformNextImagePropsToUnpic };

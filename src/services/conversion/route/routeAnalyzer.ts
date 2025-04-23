@@ -1,6 +1,5 @@
-
 import { ErrorCollector } from "../../errors/ErrorCollector";
-import { NextJsRoute } from "../../routeConverter";
+import { NextJsRoute } from "./types";
 
 /**
  * Analyze routes from project files

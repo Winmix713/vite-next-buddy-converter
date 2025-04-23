@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import Hero, { HeroProps } from "@/components/Hero";
+import Hero from "@/components/Hero";
 import FeatureList from "@/components/FeatureList";
 import Footer from "@/components/Footer";
 import ConversionStepper from "@/components/ConversionStepper";
@@ -9,7 +9,7 @@ import RouteAnalyzer from "@/components/RouteAnalyzer";
 import ConversionDashboard from "@/components/ConversionDashboard";
 import { useToast } from "@/components/ui/use-toast";
 import { ConversionProvider } from "@/context/ConversionContext";
-import { NextJsRoute } from "@/services/routeConverter";
+import { NextJsRoute } from "@/services/conversion/route/types";
 
 const Index = () => {
   const { toast } = useToast();

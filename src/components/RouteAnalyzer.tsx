@@ -1,7 +1,8 @@
 
 import { useState, useEffect } from "react";
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card";
-import { analyzeNextJsRoutes, convertToReactRoutes, NextJsRoute } from "@/services/routeConverter";
+import { analyzeNextJsRoutes, convertToReactRoutes } from "@/services/routeConverter";
+import { NextJsRoute } from "@/services/conversion/route/types";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ChevronRight, AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -20,7 +21,10 @@ const RouteAnalyzer = ({ files, onRoutesAnalyzed }: RouteAnalyzerProps) => {
 
   useEffect(() => {
     if (files.length > 0) {
-      const routes = analyzeNextJsRoutes(files);
+      // Convert File[] to string[] (using file paths)
+      const filePaths = files.map(file => file.name || file.toString());
+      
+      const routes = analyzeNextJsRoutes(filePaths);
       const reactRoutes = convertToReactRoutes(routes);
       
       // Calculate complexity scores and potential warnings for each route

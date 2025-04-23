@@ -42,4 +42,5 @@ export function convertToReactRoutes(nextRoutes: NextJsRoute[]): RouteObject[] {
   return convertedRoutes;
 }
 
+export type { NextJsRoute } from "./types";
 export { analyzeRoutes };

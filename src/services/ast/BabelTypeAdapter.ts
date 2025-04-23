@@ -1,7 +1,11 @@
 
 import * as t from '@babel/types';
 import { Node } from '@babel/traverse';
-import { BabelCompatNode } from '@/types/ast';
+
+// Define the BabelCompatNode interface
+interface BabelCompatNode extends Node {
+  type: string;
+}
 
 export class BabelTypeAdapter {
   static adaptNode(node: Node | null | undefined): BabelCompatNode | null {
