@@ -1,6 +1,7 @@
 
 import { RouteObject } from "react-router-dom";
 import { NextJsRoute, RouteConversionResult } from "@/types/conversion";
+import { convertToReactRoutes as convertRoutes } from "./conversion/route/routeConverter";
 
 export function analyzeNextJsRoutes(
   files: string[]
@@ -44,6 +45,9 @@ export function convertNextJsRoutes(
   
   return result;
 }
+
+// Re-export the convertToReactRoutes function from route/routeConverter
+export { convertRoutes as convertToReactRoutes };
 
 function createRouteFromFilePath(filePath: string): NextJsRoute | null {
   // Extract relevant path parts

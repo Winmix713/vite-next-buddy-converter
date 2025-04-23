@@ -4,6 +4,9 @@ import { NextJsRoute, RouteConversionResult } from "./types";
 import { analyzeRoutes } from "./routeAnalyzer";
 import { createRouteObject, getLayoutBasePath } from "./routeUtils";
 
+/**
+ * Converts Next.js routes to React Router route objects
+ */
 export function convertToReactRoutes(nextRoutes: NextJsRoute[]): RouteObject[] {
   const routesByLayout = new Map<string | undefined, NextJsRoute[]>();
   
