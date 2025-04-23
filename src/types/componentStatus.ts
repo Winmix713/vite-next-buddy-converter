@@ -1,7 +1,7 @@
 
 export interface ComponentStatus {
   name: string;
-  status: 'ok' | 'error';
+  status: 'ok' | 'warning' | 'error';
   message?: string;
   isUsed?: boolean;
 }

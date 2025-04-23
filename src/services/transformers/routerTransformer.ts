@@ -22,17 +22,9 @@ export function transformRouterUsage(path: NodePath<t.MemberExpression>, result:
             t.identifier('pathname')
           );
           
-          // Fix: Create a new NodePath for the replacement
-          if (path.parentPath) {
-            const newPath = NodePath.get({
-              parentPath: path.parentPath,
-              parent: locationPathname,
-              container: path.container,
-              key: path.key
-            });
-            path.replaceWith(newPath.node);
-            result.changes.push('router path property transformed');
-          }
+          // Replace the path node with locationPathname
+          path.replaceWith(locationPathname);
+          result.changes.push('router path property transformed');
           break;
       }
     }

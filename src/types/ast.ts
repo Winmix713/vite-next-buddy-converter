@@ -10,7 +10,9 @@ export interface BabelCompatNode {
 }
 
 export interface TransformResult {
+  code: string;
   changes: string[];
+  warnings: string[];
 }
 
 export interface AstTransformOptions {

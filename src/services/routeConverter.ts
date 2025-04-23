@@ -6,7 +6,7 @@ import {
   convertToReactRoutes 
 } from "./conversion/route";
 
-export { analyzeRoutes };
+export { analyzeRoutes, convertToReactRoutes };
 export type { NextJsRoute };
 
 export function analyzeNextJsRoutes(files: string[]): NextJsRoute[] {
