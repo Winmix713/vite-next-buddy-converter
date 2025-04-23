@@ -1,17 +1,13 @@
-import { RouteObject } from "react-router-dom";
-import { NextJsRoute, RouteConversionResult, ReactRouterRoute } from "./conversion/route/types";
 
-export type { NextJsRoute }; // export type to fix isolatedModules issue
+import { RouteObject } from "react-router-dom";
+import { NextJsRoute, RouteConversionResult } from "@/types/conversion";
 
 export function analyzeNextJsRoutes(
-  files: string[] | File[]
+  files: string[]
 ): NextJsRoute[] {
   const routes: NextJsRoute[] = [];
   
-  // Safely convert File[] to string[] if needed
-  const filePaths = files.map(file => typeof file === 'string' ? file : file.name);
-  
-  filePaths
+  files
     .filter(file => file.includes('/pages/') && 
       !file.includes('/_app.') && !file.includes('/_document.'))
     .forEach(file => {
@@ -24,37 +20,8 @@ export function analyzeNextJsRoutes(
   return routes;
 }
 
-export function convertToReactRoutes(
-  nextRoutes: NextJsRoute[]
-): ReactRouterRoute[] {
-  return nextRoutes.map(route => {
-    let path = route.path;
-    
-    // Convert dynamic segments
-    if (route.isDynamic) {
-      if (route.isOptionalCatchAll) {
-        // Convert [[...param]] to * (optional catch-all)
-        path = path.replace(/\/\[\[\.\.\.([^\]]+)\]\]/g, '/*');
-      } else if (route.isCatchAll) {
-        // Convert [...param] to * (catch-all)
-        path = path.replace(/\/\[\.\.\.([^\]]+)\]/g, '/*');
-      } else {
-        // Convert [param] to :param
-        path = path.replace(/\/\[([^\]]+)\]/g, '/:$1');
-      }
-    }
-    
-    // Ensure path isn't undefined and create proper ReactRouterRoute
-    return {
-      path: path || '/',
-      element: `<Component path="${route.component}" />`,
-      // add any other required properties for ReactRouterRoute
-    } as ReactRouterRoute;
-  });
-}
-
 export function convertNextJsRoutes(
-  files: string[] | File[]
+  files: string[]
 ): RouteConversionResult {
   const result: RouteConversionResult = {
     nextRoutes: [],
@@ -69,7 +36,7 @@ export function convertNextJsRoutes(
   result.nextRoutes = nextRoutes;
   
   // Convert to React Router routes
-  const reactRouterRoutes = convertToReactRoutes(nextRoutes);
+  const reactRouterRoutes = convertToReactRouterRoutes(nextRoutes);
   result.reactRouterRoutes = reactRouterRoutes;
   
   // Generate code
@@ -110,17 +77,41 @@ function createRouteFromFilePath(filePath: string): NextJsRoute | null {
   return {
     path,
     component: filePath,
-    isDynamic: isDynamic,
+    isDynamic,
     hasParams: params.length > 0,
     params,
     isIndex,
     isCatchAll,
-    isOptionalCatchAll,
-    filePath // Add filePath property
+    isOptionalCatchAll
   };
 }
 
-function generateRouterCode(routes: ReactRouterRoute[]): string {
+function convertToReactRouterRoutes(nextRoutes: NextJsRoute[]): RouteObject[] {
+  return nextRoutes.map(route => {
+    let path = route.path;
+    
+    // Convert dynamic segments
+    if (route.isDynamic) {
+      if (route.isOptionalCatchAll) {
+        // Convert [[...param]] to * (optional catch-all)
+        path = path.replace(/\/\[\[\.\.\.([^\]]+)\]\]/g, '/*');
+      } else if (route.isCatchAll) {
+        // Convert [...param] to * (catch-all)
+        path = path.replace(/\/\[\.\.\.([^\]]+)\]/g, '/*');
+      } else {
+        // Convert [param] to :param
+        path = path.replace(/\/\[([^\]]+)\]/g, '/:$1');
+      }
+    }
+    
+    return {
+      path,
+      element: `<Component path="${route.component}" />`
+    };
+  });
+}
+
+function generateRouterCode(routes: RouteObject[]): string {
   const imports = `import { createBrowserRouter } from "react-router-dom";\n\n`;
   
   const routesArray = routes

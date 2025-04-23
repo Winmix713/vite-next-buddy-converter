@@ -1,10 +1,10 @@
 
 import { RouteObject } from "react-router-dom";
-import { NextJsRoute, ReactRouterRoute, RouteConversionResult } from "./types";
+import { NextJsRoute, RouteConversionResult } from "./types";
 import { analyzeRoutes } from "./routeAnalyzer";
 import { createRouteObject, getLayoutBasePath } from "./routeUtils";
 
-export function convertToReactRoutes(nextRoutes: NextJsRoute[]): ReactRouterRoute[] {
+export function convertToReactRoutes(nextRoutes: NextJsRoute[]): RouteObject[] {
   const routesByLayout = new Map<string | undefined, NextJsRoute[]>();
   
   nextRoutes.forEach(route => {
@@ -15,7 +15,7 @@ export function convertToReactRoutes(nextRoutes: NextJsRoute[]): ReactRouterRout
     routesByLayout.get(layoutKey)?.push(route);
   });
 
-  const convertedRoutes: ReactRouterRoute[] = [];
+  const convertedRoutes: RouteObject[] = [];
   
   // Process default routes first
   const defaultRoutes = routesByLayout.get('default') || [];
@@ -27,7 +27,7 @@ export function convertToReactRoutes(nextRoutes: NextJsRoute[]): ReactRouterRout
   routesByLayout.forEach((routes, layout) => {
     if (layout === 'default') return;
     
-    const layoutRoute: ReactRouterRoute = {
+    const layoutRoute: RouteObject = {
       path: getLayoutBasePath(layout),
       element: `<Layout>${layout}</Layout>`,
       children: routes.map(route => createRouteObject(route, true))

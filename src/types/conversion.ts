@@ -1,3 +1,4 @@
+
 // Add missing conversion result type
 
 import { NextJsRoute } from "../services/routeConverter";
@@ -85,12 +86,3 @@ export interface CloudFrontOriginAccessIdentity {
   id: string;
   name: string;
 }
-
-export type ConversionAction =
-  | { type: "START_CONVERSION"; options: ConversionOptions }
-  | { type: "SET_CONVERSION_PROGRESS"; progress: number; message: string }
-  | { type: "SET_CONVERSION_OPTIONS"; options: ConversionOptions }
-  | { type: "SET_CONVERSION_ERROR"; error: string }
-  | { type: "SET_CONVERSION_RESULT"; success: boolean; result: any }
-  | { type: "SET_IS_CONVERTING"; isConverting: boolean }
-  | { type: "RESET" };

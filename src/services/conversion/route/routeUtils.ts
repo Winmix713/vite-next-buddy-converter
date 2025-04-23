@@ -1,5 +1,6 @@
 
-import { NextJsRoute, ReactRouterRoute } from "./types";
+import { RouteObject } from "react-router-dom";
+import { NextJsRoute } from "./types";
 
 export function getLayoutBasePath(layoutFile: string | undefined): string {
   if (!layoutFile) return '/';
@@ -19,10 +20,9 @@ export function getComponentName(routePath: string): string {
     .replace(/^\d+/, '') || 'Page';
 }
 
-export function createRouteObject(route: NextJsRoute, isChildRoute: boolean = false): ReactRouterRoute {
+export function createRouteObject(route: NextJsRoute, isChildRoute: boolean = false): RouteObject {
   let reactPath = route.path;
   
-  // Handle index routes
   if (route.isIndex && isChildRoute) {
     reactPath = '';
   }
