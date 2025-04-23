@@ -23,14 +23,11 @@ export function transformRouterUsage(path: NodePath<t.MemberExpression>, result:
             t.identifier('pathname')
           );
           
-          // Use type-safe replacement approach
-          try {
-            // Cast the expression to any to bypass type checking
-            path.replaceWith(locationPathname as any);
+          // Use BabelTypeAdapter for safe node replacement
+          if (BabelTypeAdapter.safeReplaceWith(path, locationPathname)) {
             result.changes.push('router path property transformed');
-          } catch (error) {
-            // Handle error if the replacement fails
-            result.warnings.push(`Failed to transform router path property: ${error instanceof Error ? error.message : String(error)}`);
+          } else {
+            result.warnings.push('Failed to transform router path property: type incompatibility');
           }
           break;
       }

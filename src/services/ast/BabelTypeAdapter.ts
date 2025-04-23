@@ -38,10 +38,12 @@ export class BabelTypeAdapter {
     return node?.type === 'JSXIdentifier';
   }
   
-  // Add a helper method for safe node replacement
+  // Improved helper method for safe node replacement
   static safeReplaceWith(path: NodePath<any>, replacement: any): boolean {
     try {
-      path.replaceWith(replacement);
+      // Use a type assertion to bypass strict type checking
+      // This is necessary due to potential mismatches between different Babel versions
+      path.replaceWith(replacement as any);
       return true;
     } catch (error) {
       console.error('Error during node replacement:', error);
