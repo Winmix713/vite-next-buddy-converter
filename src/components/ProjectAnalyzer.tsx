@@ -5,8 +5,9 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Upload } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import CodePreview from "./CodePreview";
+import FileUploader from "./analyzer/FileUploader";
 
 interface ProjectAnalyzerProps {
   onFilesProcessed: (results: any) => void;
@@ -14,6 +15,7 @@ interface ProjectAnalyzerProps {
 }
 
 const ProjectAnalyzer = ({ files = [], onFilesProcessed }: ProjectAnalyzerProps) => {
+  const { toast } = useToast();
   const [progress, setProgress] = useState(0);
   const [currentFile, setCurrentFile] = useState("");
   const [stats, setStats] = useState({
@@ -116,7 +118,8 @@ const ProjectAnalyzer = ({ files = [], onFilesProcessed }: ProjectAnalyzerProps)
           nextComponents,
           apiRoutes,
           dataFetching,
-          complexityScore: complexity
+          complexityScore: complexity,
+          files: filesToProcess
         };
 
         setStats(results);
@@ -141,22 +144,19 @@ const ProjectAnalyzer = ({ files = [], onFilesProcessed }: ProjectAnalyzerProps)
     };
 
     analyzeFiles();
-  }, [filesToProcess, onFilesProcessed, isAnalyzing, filePreview]);
+  }, [filesToProcess, onFilesProcessed, isAnalyzing, filePreview, toast]);
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files) {
-      const newFiles = Array.from(event.target.files);
-      console.log("Files selected:", newFiles.length);
-      setSelectedFiles(newFiles);
-      setFilePreview(null);
-      
-      // Show success toast for file selection
-      if (newFiles.length > 0) {
-        toast({
-          title: "Files Selected",
-          description: `${newFiles.length} files selected for analysis.`,
-        });
-      }
+  const handleFileChange = (newFiles: File[]) => {
+    console.log("Files selected:", newFiles.length);
+    setSelectedFiles(newFiles);
+    setFilePreview(null);
+    
+    // Show success toast for file selection
+    if (newFiles.length > 0) {
+      toast({
+        title: "Files Selected",
+        description: `${newFiles.length} files selected for analysis.`,
+      });
     }
   };
 
@@ -187,7 +187,7 @@ const ProjectAnalyzer = ({ files = [], onFilesProcessed }: ProjectAnalyzerProps)
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = (e) => resolve(e.target?.result as string);
-      reader.onerror = (e) => reject(new Error("File reading error"));
+      reader.onerror = () => reject(new Error("File reading error"));
       reader.readAsText(file);
     });
   };
@@ -201,33 +201,7 @@ const ProjectAnalyzer = ({ files = [], onFilesProcessed }: ProjectAnalyzerProps)
       <CardContent>
         {/* Show file upload UI if no files are provided */}
         {filesToProcess.length === 0 ? (
-          <div className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-300 rounded-lg">
-            <Upload className="h-10 w-10 text-gray-400 mb-2" />
-            <p className="text-sm text-gray-500 mb-4">Drag & drop your project files or click to browse</p>
-            <input
-              type="file"
-              id="file-upload"
-              multiple
-              className="hidden"
-              onChange={handleFileChange}
-            />
-            <label htmlFor="file-upload">
-              <Button variant="outline" size="sm" className="cursor-pointer">
-                Select Files
-              </Button>
-            </label>
-            {selectedFiles.length > 0 && (
-              <div className="mt-4 w-full">
-                <p className="text-sm font-medium">{selectedFiles.length} files selected</p>
-                <Button 
-                  className="mt-2 w-full" 
-                  onClick={handleStartAnalysis}
-                >
-                  Start Analysis
-                </Button>
-              </div>
-            )}
-          </div>
+          <FileUploader onFilesSelected={handleFileChange} isAnalyzing={isAnalyzing} />
         ) : (
           <div className="space-y-4">
             {isAnalyzing ? (

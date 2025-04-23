@@ -1,3 +1,4 @@
+
 import { RouteObject } from "react-router-dom";
 import { RouteConversionResult } from "@/types/conversion";
 import { 
@@ -82,7 +83,7 @@ function createRouteFromFilePath(filePath: string): NextJsRoute | null {
   };
 }
 
-function convertToReactRouterRoutes(nextRoutes: NextJsRoute[]): RouteObject[] {
+export function convertToReactRouterRoutes(nextRoutes: NextJsRoute[]): RouteObject[] {
   return nextRoutes.map(route => {
     let path = route.path;
     

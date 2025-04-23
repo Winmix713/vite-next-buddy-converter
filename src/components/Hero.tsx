@@ -2,7 +2,7 @@
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 export interface HeroProps {
   onStartAnalysis: (files: File[]) => void;
@@ -10,6 +10,7 @@ export interface HeroProps {
 }
 
 const Hero = ({ onStartAnalysis, isAnalyzing }: HeroProps) => {
+  const { toast } = useToast();
   const [isDragging, setIsDragging] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -55,10 +56,6 @@ const Hero = ({ onStartAnalysis, isAnalyzing }: HeroProps) => {
     if (selectedFiles.length > 0) {
       console.log("Starting analysis with", selectedFiles.length, "files");
       onStartAnalysis(selectedFiles);
-      toast({
-        title: "Analysis Started",
-        description: `Analyzing ${selectedFiles.length} files...`
-      });
     } else {
       toast({
         title: "No Files Selected",
@@ -112,8 +109,6 @@ const Hero = ({ onStartAnalysis, isAnalyzing }: HeroProps) => {
               onChange={handleFileChange}
               className="hidden"
               multiple
-              // Remove the problematic attributes that don't work correctly in some browsers
-              // and use regular file selection
             />
             
             <Button 

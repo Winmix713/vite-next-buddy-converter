@@ -7,7 +7,7 @@ import ConversionStepper from "@/components/ConversionStepper";
 import ProjectAnalyzer from "@/components/ProjectAnalyzer";
 import RouteAnalyzer from "@/components/RouteAnalyzer";
 import ConversionDashboard from "@/components/ConversionDashboard";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { ConversionProvider } from "@/context/ConversionContext";
 import { NextJsRoute } from "@/services/conversion/route/types";
 
@@ -15,10 +15,21 @@ const Index = () => {
   const { toast } = useToast();
   const [step, setStep] = useState(1);
   const [projectData, setProjectData] = useState<any>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const [routeData, setRouteData] = useState<NextJsRoute[]>([]);
   const [isConverting, setIsConverting] = useState(false);
 
+  const handleStartAnalysis = (selectedFiles: File[]) => {
+    console.log("Starting analysis with", selectedFiles.length, "files");
+    setFiles(selectedFiles);
+    toast({
+      title: "Analysis Started",
+      description: `Analyzing ${selectedFiles.length} files...`
+    });
+  };
+
   const handleFilesProcessed = (data: any) => {
+    console.log("Files processed:", data);
     setProjectData(data);
     toast({
       title: "Project Analyzed",
@@ -57,11 +68,14 @@ const Index = () => {
   const renderStepContent = () => {
     switch (step) {
       case 1:
-        return <ProjectAnalyzer onFilesProcessed={handleFilesProcessed} />;
+        return <ProjectAnalyzer 
+          onFilesProcessed={handleFilesProcessed} 
+          files={files}
+        />;
       case 2:
         return (
           <RouteAnalyzer
-            files={projectData?.files || []}
+            files={files}
             onRoutesAnalyzed={handleRoutesProcessed}
           />
         );
@@ -83,7 +97,7 @@ const Index = () => {
       <div className="min-h-screen flex flex-col">
         <div className="flex-grow container mx-auto px-4 py-8">
           <Hero
-            onStartAnalysis={() => setStep(1)}
+            onStartAnalysis={handleStartAnalysis}
             isAnalyzing={isConverting}
           />
           <ConversionStepper currentStep={step} totalSteps={3} />
