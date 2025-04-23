@@ -1,6 +1,6 @@
 
 import * as t from '@babel/types';
-import { Node } from '@babel/traverse';
+import { Node, NodePath } from '@babel/traverse';
 
 // Define the BabelCompatNode interface
 interface BabelCompatNode {
@@ -36,5 +36,16 @@ export class BabelTypeAdapter {
 
   static isJSXIdentifier(node: any): node is t.JSXIdentifier {
     return node?.type === 'JSXIdentifier';
+  }
+  
+  // Add a helper method for safe node replacement
+  static safeReplaceWith(path: NodePath<any>, replacement: any): boolean {
+    try {
+      path.replaceWith(replacement);
+      return true;
+    } catch (error) {
+      console.error('Error during node replacement:', error);
+      return false;
+    }
   }
 }

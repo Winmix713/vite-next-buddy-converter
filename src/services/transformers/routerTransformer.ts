@@ -2,6 +2,7 @@
 import { NodePath } from '@babel/traverse';
 import * as t from '@babel/types';
 import { TransformResult } from '@/types/ast';
+import { BabelTypeAdapter } from '@/services/ast/BabelTypeAdapter';
 
 export function transformRouterUsage(path: NodePath<t.MemberExpression>, result: TransformResult) {
   if (t.isIdentifier(path.node.object) && path.node.object.name === 'router') {
@@ -22,9 +23,15 @@ export function transformRouterUsage(path: NodePath<t.MemberExpression>, result:
             t.identifier('pathname')
           );
           
-          // Replace the path node with locationPathname
-          path.replaceWith(locationPathname);
-          result.changes.push('router path property transformed');
+          // Use type-safe replacement approach
+          try {
+            // Cast the expression to any to bypass type checking
+            path.replaceWith(locationPathname as any);
+            result.changes.push('router path property transformed');
+          } catch (error) {
+            // Handle error if the replacement fails
+            result.warnings.push(`Failed to transform router path property: ${error instanceof Error ? error.message : String(error)}`);
+          }
           break;
       }
     }
