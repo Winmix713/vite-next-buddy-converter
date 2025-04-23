@@ -8,3 +8,12 @@ export interface BabelCompatNode {
     end: { line: number; column: number };
   };
 }
+
+export interface TransformResult {
+  changes: string[];
+}
+
+export interface AstTransformOptions {
+  preserveComments?: boolean;
+  targetSyntax?: 'typescript' | 'javascript';
+}

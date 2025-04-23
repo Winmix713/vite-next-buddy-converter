@@ -1,9 +1,7 @@
 
-/**
- * Represents the status of a component in the conversion process
- */
 export interface ComponentStatus {
   name: string;
-  status: 'ok' | 'warning' | 'error';
+  status: 'ok' | 'error';
   message?: string;
+  isUsed?: boolean;
 }
