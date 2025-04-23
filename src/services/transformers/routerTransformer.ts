@@ -25,9 +25,10 @@ export function transformRouterUsage(path: NodePath<t.MemberExpression>, result:
             t.identifier('pathname')
           );
           
-          // Instead of using path.replaceWith directly, wrap the node manually
+          // Fix: Use path.replaceWith directly with the member expression
+          // instead of wrapping in ExpressionStatement
           if (path.parentPath) {
-            path.parentPath.replaceWith(t.expressionStatement(locationPathname));
+            path.replaceWith(locationPathname);
             result.changes.push('router path property transformed');
           }
           break;

@@ -1,5 +1,5 @@
 
-import { analyze } from "./systemAnalyzer";
+import { SystemAnalysisResult, analyzeSystem } from "./systemAnalyzer";
 import { ComponentStatus } from "@/types/componentStatus";
 
 interface CodeStructure {

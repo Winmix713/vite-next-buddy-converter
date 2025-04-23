@@ -3,8 +3,9 @@ import * as t from '@babel/types';
 import { Node } from '@babel/traverse';
 
 // Define the BabelCompatNode interface
-interface BabelCompatNode extends Node {
+interface BabelCompatNode {
   type: string;
+  // Add other Node properties
 }
 
 export class BabelTypeAdapter {
